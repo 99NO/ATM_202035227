@@ -1,0 +1,568 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define Max 100                     // 계좌를 생성할 수 있는 개수. define으로 정의 함으로서 프로그래밍 하는 도중에 변수의 값을 바꿀 때 일일이 바꾸지 않아도 되기 때문에 용의하다.
+#define name_len 100                // 계좌 예금주 명 이름 최대 길이. define으로 정의 함으로서 프로그래밍 하는 도중에 변수의 값을 바꿀 때 일일이 바꾸지 않아도 되기 때문에 용의하다.
+
+void main_menu(void);               // ATM 프로그램의 메인화면
+
+void unlock_manager_mode(void);     // 관리자 모드 암호 함수
+void manager_mode(void);            // 관리자 모드 선택 함수
+void manager_inquiry(void);         // 관리자 계좌 조회 함수
+void stop_account(void);            // 계좌 중지 함수
+void cancel_stop_account(void);     // 계좌 중지 해제 함수
+
+void client_mode(void);             // 고객 모드 선택 함수
+void deposit_account(void);         // 입금 함수
+void withdraw_account(void);        // 출금 함수
+void client_inquiry(void);          // 고객 계좌 조회 함수
+void create_account(void);          // 계좌 생성 함수
+void transfer_account1(void);       // 송금 함수1
+void transfer_account2(int);        // 송금 함수2
+
+int random_account_num(void);       // 계좌 번호 생성 함수
+
+int account_stop[Max];              // 계좌 중지상태: 배열의 값이 0이면 중지 값이 1이면 정상
+int account_num[Max];               // 계좌 번호
+int account_pass[Max];              // 계좌 비밀번호
+int account_money[Max];             // 계좌 잔고
+char account_name[Max][name_len];   // 계좌 예금주명
+
+int count = 0;                      // ATM 이용자 수=계좌 생성 수 
+
+// 계좌 정보나,계좌 생성 수를 전역 변수로 설정하여 변수 값이 유지 되게 한다.
+
+int main()
+{
+    for (int i = 0; i < Max; i++)   
+    {
+        account_stop[i] = 1;                // for 문을 이용하여 account_stop 의 값들을 1로 초기화 하여 모든 계좌를 정상상태로 만든다
+        account_money[i] = 0;              // for 문을 이용하여 account_money의 값을 0으로 초기화 하여 모든 계좌의 잔고를 0으로 만든다.
+    }
+    main_menu();                        // 메인 메뉴 함수를 호출하여 프로그램을 시작.     
+    return 0;
+}
+void main_menu()
+{
+    int select_menu = 0;
+    printf("\n<메인메뉴>\n");
+    printf("1.고객 모드\n2.관리자 모드\n3.종료\n");
+    while (1)             //while 반복문을 사용하여 잘못된 값을 입력하여도 프로그램을 종료하지 않는 한 선택 가능       
+    {
+        scanf_s("%d", &select_menu);
+        switch (select_menu)            //switch 문을 통해 select_menu라는 변수의 값에 따라 그에 맞는 case가 실행됨
+        {
+        case 1:client_mode(); break;              // 1번을 입력 받았을 시 client_mode() 즉 고객모드 함수 호출
+        case 2:unlock_manager_mode(); break;             // 2번을 입력 받았을 시 client_mode() 관리자모드 함수 호출
+        case 3:printf("프로그램이 종료됩니다"); exit(0); break;           //3번을 입력 받았을 시 exit()함수가 실해되고 프로그램 종료
+        default:printf("잘못 입력하셨습니다. 다시 입력해주세요."); break;            
+        }
+    }
+}
+
+void client_mode()
+{
+    int client_select;
+    printf("<고객 서비스>\n");
+    printf("1.계좌 조회\n2.입금\n3.출금\n4.송금\n5.계좌 개설\n6.뒤로가기\n");
+    scanf_s("%d", &client_select);
+    while (1)       
+    {
+        switch (client_select)
+        {
+        case 1:client_inquiry(); break;         //1번을 입력 받았을 시 고객 계좌 조회함수 호출
+        case 2:deposit_account(); break;        //2번을 입력 받았을 시 입금 함수 호출
+        case 3:withdraw_account(); break;       //3번을 입력 받았을 시 출금 함수 호출
+        case 4:transfer_account1(); break;      //4번을 입력 받았을 시 송금 함수 호출
+        case 5:create_account(); break;         //5번을 입력 받았을 시 계좌 생성 함수 호출
+        case 6:main_menu(); break;              //6번을 입력 받았을 시 다시 메인메뉴 함수를 호출하여 돌아감.
+        default:printf("잘못 입력하셨습니다. 다시 입력해주세요."); break;
+        }
+    }
+}
+
+void unlock_manager_mode()
+{
+    int manager_password = 2020;            //관리자 모드의 비밀번호를 2020으로 설정.
+    int password;
+    int attempt;
+    printf("관리자 번호를 입력하십시오.(3회 이상 잘못 입력하시면 메뉴화면으로 돌아갑니다.)\n");      
+    for (attempt = 0; attempt < 3; attempt++)           //시도 횟수인 attempt가 for문의 제어변수가 되어 조건문을 통해 시도가 3번이 될 때 까지 for문 반복 
+    {
+        scanf_s("%d", &password);       
+        if (password == manager_password)           //if 조건문을 사용하여 입력받은 비밀번호가 관리자 비밀번호와 일치하는 확인
+        {
+            manager_mode();                 //if문을 통해 일치하는 것을 확인 하였기에 관리자 모드 호출
+            break;                          
+        }
+        else
+            printf("잘못입력하셨습니다.(시도횟수%d)\n", attempt + 1);        //비밀번호가 일치하지 않았기에 일치하지 않았다는 문장을 출력함과 동시에 지금이 몇번 쨰 시도인지 출력
+    }
+    printf("메인메뉴로 돌아갑니다.\n");
+    main_menu();                        
+}
+
+
+void manager_mode()
+{
+    int manager_select;
+    printf("<관리자 메뉴>\n");
+    printf("1.계좌 조회\n2.계좌 중지\n3.계좌 중지 해제\n");
+    scanf_s("%d", &manager_select);
+    while (1)
+    {
+        switch (manager_select)
+        {
+        case 1:manager_inquiry(); break;            //관리자 계좌 조회 실행
+        case 2:stop_account(); break;               //계좌 중지 실행
+        case 3:cancel_stop_account(); break;        //계좌 중지 해제 실행
+        default:printf("잘못 입력하셨습니다. 다시 입력해주세요."); break;
+        }
+    }
+}
+
+int random_account_num()            //난수를 생성하여 4자리 수 계좌번호를 만드는 함수
+{
+    int random_account = 0;         //계좌번호
+    srand(time(NULL));
+    for (int i = 0; i < 4; i++)     //4자리 계좌번호이므로 4번 반복
+    {
+        int random = (rand() % 9) + 1;          //1~9까지의 임의의 정수 난수 발생
+        random_account = (random_account + random) * 10;        //4자리 정수를 발생 시켜야 하므로 발생된 난수에 10을 곱하여 계좌번호에 더한다.
+    }
+    random_account = random_account / 10;       //마지막 난수 또한 10을 곱하여서 현재 계좌 번호는 5자리 수 이므로 10을 나눈다.
+
+    for (int j = 0; j <= count; j++)            //계좌를 생성 할때 기존에 존재했던 계좌 번호와 동일하면 서비스 이용에 큰 문제가 생긴다. 따라서 방금 생성한 계좌번호 기존의 계좌번호와 일치하는 지 확인
+    {
+        if (random_account == account_num[j])       
+            random_account_num();               //만약 방금 생성한 계좌번호가 기존에 존재하는 번호 일시   random_account_num 함수를 다시 호출하여 계좌번호를 다시 생성한다.
+    }
+
+    return random_account;
+}
+
+
+void create_account(void)   //계좌 개설 함수
+{
+    printf("\n<계좌 개설>\n");
+    printf("예금주명을 입력하십시오:");
+    scanf_s("%s", account_name[count], sizeof(account_name));       //account_name[count]에 예금주명을 입력 받는다. 
+    printf("\n계좌 비밀번호 4자리를 입력하세요:");                        
+    scanf_s("%d", &account_pass[count]);                            //account_pass[count]에 계좌 비밀번호를 입력 받는다.
+    account_num[count] = random_account_num();                      //random_account_num 함수르 호출하여, 계좌 번호 생성
+    printf("\n계좌번호는 %d입니다\n", account_num[count]);            
+    count++;                                                        //계좌가 하나 생성 되었기 때문에 count에 1을 더한다.
+    main_menu();
+}
+void deposit_account(void)
+{
+    int num;                                            //입력받은 계좌번호
+    int deposit_num = -1;                               //입금할 계좌의 주소값
+    printf("\n<입금 서비스>\n");
+    printf("입금하실 계좌번호를 입력하시오:");
+    scanf_s("%d", &num);
+    for (int i = 0; i < Max; i++)                   //for문을 통해 입력 받은 계좌의 번호가 존재하는지 확인
+    {
+        if (num == account_num[i])                  //입력받은 계좌번호가 account_num 즉 계좌번호 배열에 존재하는 값과 일치한다.
+        {
+            deposit_num = i;                        //일치하기 때문에 현재 for문의 제어변수의 값이 입금할려는 계좌의 주소값과 동일하하다. 따라서 deposit_num에 for문의 제어변수 i값을 입력
+            if (account_stop[deposit_num] == 0)     
+            {
+                printf("\n해당 계좌는 중지되어 입금이 불가능합니다.\n");     //해당계좌의 중지 상태가 0이므로 해당 계좌는 중지된 것이다.
+                printf("메인메뉴로 돌아갑니다.\n");
+                main_menu();
+
+            }
+            printf("\n계좌 비밀번호를 입력하시오.(3회 이상 잘못 입력하시면 계좌가 중지되며 메뉴화면으로 돌아갑니다.)\n");  //해당계좌가 정상상태 이므로 비밀번호를 입력 받는다.
+            int attempt = 0;        //비밀번호 입력 시도 횟수
+            while (attempt < 3)
+            {
+                attempt++;      
+                int password;
+                scanf_s("%d", &password);
+                if (password == account_pass[deposit_num])          //입력 받은 비밀번호가 해당 계좌의 비밀번호와 일치하면 while 루프를 break한다.
+                    break;
+                else
+                    printf("잘못입력하셨습니다.(%d회 오류)\n", attempt);        //입력 받은 비밀번호가 해당 계좌의 비밀번호와 일치하지 않으므로 현재 시도 횟수를 출력
+            }
+            if (attempt == 3)              
+            {
+                printf("계좌가 중지됩니다.\n");
+                printf("메인메뉴로 돌아갑니다\n");
+                account_stop[deposit_num] = 0;      //해당 계좌의 비밀번호입력 시도가 3번이상이므로 보안을 위해 해당 계좌를 중지한다.
+                main_menu();
+            }
+            break;
+        }
+    }
+    if (deposit_num == -1)      //계좌의 주솟값이 초기에 값인 -1과 동일하다면 계좌를 찾지 못한 것 이다.
+    {
+        int select = 0;
+        printf("해당하는 계좌가 존재 하지 않습니다.\n");
+        printf("다시 입력하시겠습니까?(1.예 2.아니요)\n");
+        while (1)
+        {
+            scanf_s("%d", &select);
+            switch (select)             //switch문을 통해 계좌번호를 다시 입력 받거나 메
+            {
+            case 1: deposit_account(); break;
+            case 2: main_menu(); break;
+            default: printf("잘못 입력하셨습니다. 다시 입력해주세요."); break;
+            }
+        }
+    }
+    else            //해당 계좌의 주솟값을 알아냈기 때문에 입금 실행
+    {
+        int deposit_money = 0;
+        printf("\n입급하실 금액을 입력하십시오:");
+        scanf_s("%d", &deposit_money);
+        printf("\n해당 계좌에 %d 원을 입금합니다.\n", deposit_money);
+        account_money[deposit_num] += deposit_money;                            //해당 계좌의 주솟값에 해당하는 account_money즉 계좌 잠액에 입력받은 값을 더한다.
+        printf("\n해당 계좌에 잔액은 %d원 입니다.", account_money[deposit_num]);               //해당계좌의 잔액을 표시/
+    }
+    main_menu();
+}
+void withdraw_account(void)             //출금 함수 또한 입금 함수와 같은 알고리즘으로 설정.
+{
+    int num;
+    int withdraw_num = -1;
+    printf("\n<출금 서비스>\n");
+    printf("출금하실 계좌번호를 입력하시오:");
+    scanf_s("%d", &num);
+    for (int i = 0; i < Max; i++)
+    {
+        if (num == account_num[i])
+        {
+            withdraw_num = i;
+            int attempt = 0;
+            if (account_stop[withdraw_num] == 0)
+            {
+                printf("\n해당 계좌는 중지되어 출금이 불가능합니다.\n");
+                printf("메인메뉴로 돌아갑니다.\n");
+                main_menu();
+
+            }
+            printf("\n계좌 비밀번호를 입력하시오.(3회 이상 잘못 입력하시면 계좌가 중지되며 메뉴화면으로 돌아갑니다.)\n");
+            while (attempt < 3)
+            {
+                attempt++;
+                int password;
+                scanf_s("%d", &password);
+                if (password == account_pass[withdraw_num])
+                    break;
+                else
+                    printf("잘못입력하셨습니다.(%d회 오류)\n", attempt);
+            }
+            if (attempt == 3)
+            {
+                printf("계좌가 중지됩니다.\n");
+                printf("메인메뉴로 돌아갑니다\n");
+                account_stop[withdraw_num] = 0;
+                printf("메인메뉴로 돌아갑니다\n");
+                main_menu();
+            }
+            break;
+        }
+    }
+    if (withdraw_num == -1)
+    {
+        int select = 0;
+        printf("해당하는 계좌가 존재 하지 않습니다.\n");
+        printf("다시 입력하시겠습니까?(1.예 2.아니요)\n");
+        while (1)
+        {
+            scanf_s("%d", &select);
+            switch (select)
+            {
+            case 1: withdraw_account(); break;
+            case 2: main_menu(); break;
+            default: printf("잘못 입력하셨습니다. 다시 입력해주세요."); break;
+            }
+        }
+    }
+    else
+    {
+        int withdraw_money = 0;
+        printf("\n출금하실 금액을 입력하십시오:");
+        while (1)
+        {
+            scanf_s("%d", &withdraw_money);
+            if (account_money[withdraw_num] < withdraw_money)
+            {
+                printf("\n계좌에 잔액이 부족합니다.");
+            }
+            else
+            {
+                printf("\n해당 계좌에 %d 원을 출금합니다.\n", withdraw_money);
+                account_money[withdraw_num] -= withdraw_money;
+                printf("\n해당 계좌에 잔액은 %d원 입니다. %d", account_money[withdraw_num], withdraw_money);
+                break;
+            }
+        }
+    }
+    main_menu();
+}
+void client_inquiry(void)       
+{
+    int num;            //입력받을 계좌번호
+    int inquiry_num = -1;       //계좌번호의 주소값
+    printf("\n<고객 계좌 조회 서비스>\n");
+    printf("조회하실 계좌번호를 입력하시오:");
+    scanf_s("%d", &num);
+    for (int i = 0; i < Max; i++)       //for문을통해 입력받은 계좌번호가 생성된 계좌번호에 존재하는지 확인
+    {
+        if (num == account_num[i])      //입력받은 계좌 번호가 기존의 계좌 번호와 일치한다
+        {
+            inquiry_num = i;            //for문의 제어변수값을 계좌번호의 주소값에 입력
+            int attempt = 0;            //비밀번호 입력 시도 횟수
+            printf("\n계좌 비밀번호를 입력하시오.(3회 이상 잘못 입력하시면 메뉴화면으로 돌아갑니다.)\n");        
+            while (attempt < 3)
+            {
+                attempt++;
+                int password;
+                scanf_s("%d", &password);
+                if (password == account_pass[inquiry_num])      //계좌 비밀번호가 일치하면 while 루프를 break
+                    break;
+                else
+                    printf("잘못입력하셨습니다.(%d회 오류)\n", attempt);        //계좌 비밀번호가 일치 하지 않으면 시도횟수 출력
+            }
+            if (attempt == 3)
+            {
+                printf("메인메뉴로 돌아갑니다\n");        //시도횟수가 3번이면 메인메뉴로 돌아간다. (입출금과 다르게 조회는 계좌중지를 실행하지 않습니다. 계좌가 중지된 상태에서도 조회는 가능)
+                main_menu();
+            }
+            break;
+        }
+    }
+    if (inquiry_num == -1)      //계좌의 주솟갑이 초기에 초기화된 값과 같다.(입력받은 계좌번호가 존재 하지 않는다)
+    {
+        int select = 0;
+        printf("해당하는 계좌가 존재 하지 않습니다.\n");
+        printf("다시 입력하시겠습니까?(1.예 2.아니요)\n");
+        while (1)   
+        {
+            scanf_s("%d", &select);
+            switch (select)         //switch 문을 통해 다시 입력 받거나 메인메뉴로 돌아감
+            {
+            case 1: client_inquiry(); break;
+            case 2: main_menu(); break;
+            default: printf("잘못 입력하셨습니다. 다시 입력해주세요."); break;
+            }
+        }
+    }
+    else        //입력 받은 계좌 번호에 해당하는 계좌가 존재하고 비밀번호 또한 일치하므로 계좌 조회
+    {
+        printf("\n****계좌조회****\n");
+        printf("예금주명:%s\n", &account_name[inquiry_num]);
+        printf("계좌 잔액:%d\n", account_money[inquiry_num]);
+    }
+    main_menu();
+}
+void transfer_account1(void)        //송금 함수1에서는 돈을 보낼 계좌의 번호와 비밀번호를 확인한다.
+{
+    printf("<송금 서비스>\n");
+    int num;                //입력받은 계좌번호
+    int transfer_num = -1;       //입금할 계좌의 주소값
+    printf("본인의 계좌번호를 입력하시오:");
+    scanf_s("%d", &num);
+    for (int i = 0; i < Max; i++)           //for문을 통해 입력 받은 계좌의 번호가 존재하는지 확인
+    {
+        if (num == account_num[i])           //입력받은 계좌번호가 account_num 즉 계좌번호 배열에 존재하는 값과 일치한다.
+        {
+            transfer_num = i;                //일치하기 때문에 현재 for문의 제어변수의 값이 입금할려는 계좌의 주소값과 동일하하다. 따라서 deposit_num에 for문의 제어변수 i값을 입력
+            int attempt = 0;
+            if (account_stop[transfer_num] == 0)    //해당계좌의 중지 상태가 0이므로 해당 계좌는 중지된 것이다.
+            {
+                printf("\n해당 계좌는 중지되어 송금이 불가능합니다.\n");
+                printf("메인메뉴로 돌아갑니다.\n");
+                main_menu();
+
+            }
+            printf("\n계좌 비밀번호를 입력하시오.(3회 이상 잘못 입력하시면 계좌가 중지되며 메뉴화면으로 돌아갑니다.)\n");       //해당계좌가 정상상태 이므로 비밀번호를 입력 받는다.
+            while (attempt < 3)
+            {
+                attempt++;
+                int password;
+                scanf_s("%d", &password);
+                if (password == account_pass[transfer_num])          //입력 받은 비밀번호가 해당 계좌의 비밀번호와 일치하면 while 루프를 break한다.
+                    break;
+                else
+                    printf("잘못입력하셨습니다.(%d회 오류)\n", attempt);        //입력 받은 비밀번호가 해당 계좌의 비밀번호와 일치하지 않으므로 현재 시도 횟수를 출력
+            }
+            if (attempt == 3)
+            {
+                printf("계좌가 중지됩니다.\n");
+                printf("메인메뉴로 돌아갑니다\n");
+                account_stop[transfer_num] = 0;     //해당 계좌의 비밀번호입력 오류가 3번이상이므로 보안을 위해 해당 계좌를 중지한다.
+                main_menu();
+            }
+            break;
+        }
+    }
+    if (transfer_num == -1)          //계좌의 주솟값이 초기에 값인 -1과 동일하다면 계좌를 찾지 못한 것 이다.
+    {
+        int select = 0;
+        printf("해당하는 계좌가 존재 하지 않습니다.\n");
+        printf("다시 입력하시겠습니까?(1.예 2.아니요)\n");
+        while (1)
+        {
+            scanf_s("%d", &select);
+            switch (select)         //switch문을 통해 계좌번호를 다시 입력 받거나 메인메뉴로 돌아간다.  
+            {
+            case 1: withdraw_account(); break;
+            case 2: main_menu(); break;
+            default: printf("잘못 입력하셨습니다. 다시 입력해주세요."); break;
+            }
+        }
+    }
+    else    //해당 계좌의 주솟값을 알아냈기 때문에 송금함수2 실행
+    {
+        transfer_account2(transfer_num);        //돈을 보낼 계좌의 주솟값이 필요하기 때문에 함수에 주솟값이 transfer_num 입력
+    }
+}
+
+void transfer_account2(int transfer_num)        //송금함수2에서는 돈을 받은 계좌의 번호와 송금할 금액의 액수를 입력받는다
+{
+    int transfer_account_num = -1;
+    int num2;
+    printf("송금할 계좌의 계좌번호를 입력하시오.");
+    scanf_s("%d", &num2);
+    for (int i = 0; i < Max; i++)       //송금함수 1과 동일한 알고리즘으로 계좌번호를 찾지만 해당계좌의 비밀번호는 받지 않는다.
+    {
+        if (num2 == account_num[i])
+        {
+            transfer_account_num = i;
+            break;
+        }
+    }
+    if (transfer_account_num == -1)
+    {
+        int select = 0;
+        printf("해당하는 계좌가 존재 하지 않습니다.\n");
+        printf("다시 입력하시겠습니까?(1.예 2.아니요)\n");
+        while (1)
+        {
+            scanf_s("%d", &select);
+            switch (select)
+            {
+            case 1: transfer_account2(transfer_num); break;
+            case 2: main_menu(); break;
+            default: printf("잘못 입력하셨습니다. 다시 입력해주세요."); break;
+            }
+        }
+    }
+
+    int transfer_money = 0;
+    printf("\n송금하실 금액을 입력하십시오:");   
+    while (1)   //돈을 보낼 계좌의 주솟값을 이용하여 현 계좌에 송금할 금액의 이상이 돈이 있는지 확인
+    {
+        scanf_s("%d", &transfer_money);     //송금할 금액을 입력받는다.
+        if (account_money[transfer_num] < transfer_money)          
+        {
+            printf("\n계좌에 잔액이 부족합니다.");          
+        }
+        else   //계좌의 돈이 송금할 금애 이상으로 존재하므로 송금 실행
+        {
+            printf("\n해당 계좌에서 %d원을 %s님에게 송금 합니다.\n", transfer_money, &account_name[transfer_account_num], sizeof(account_name));    //송금할 금액과 송금 받는 계좌의 예금주 명을 출력
+            account_money[transfer_num] -= transfer_money;          //돈을 보낸 계좌에서 송금한 돈의 금액을 뺀다.
+            account_money[transfer_account_num] += transfer_money;          //돈을 받은 계좌에 송금한 금액을 더한다.
+            printf("\n고객님의 계좌 잔액은 %d원 입니다.", account_money[transfer_num]);     //돈을 보낸 계좌의 잔액을 표시.
+            break;      //돈을 보냈으므로 while문 break
+        }
+    }
+    main_menu();
+}
+
+
+
+void manager_inquiry(void)
+{
+    printf("\n<관리자 계좌 조회>\n");
+    for (int i = 0; i < count; i++)     //for문을 통해 제어변수 i가 현재 계좌 수인 count미만일 때까지 반복
+    {
+        printf("*********\n");
+        printf("예금주명 %s\n", &account_name[i], sizeof(account_name));
+        printf("계좌번호%d\n", account_num[i], sizeof(account_num));
+        printf("계좌비밀번호%d\n", account_pass[i]);
+        printf("계좌잔액%d\n", account_money[i]);
+    }
+    //제어 변수와 같은 주솟값에 해당하는 계좌의 정보(예금주 명,계좌번호,비밀번호,잔액)을 출력한다.
+    main_menu();
+}
+void stop_account(void)
+{
+    printf("\n<계좌 중지>\n");
+    int num;        //입력할 계좌 번호
+    int stop_num = -1;          //중지할 계좌 번호의 주소값
+    printf("중지하실 계좌번호를 입력하십시오.\n");
+    scanf_s("%d", &num);
+    for (int i = 0; i < Max; i++)          //for문을 통해 계좌번호의 주소값을 찾는다
+    {
+        if (num == account_num[i])         //일치하는 계좌를 찾았기 때문에 현재 제어변수 i의 값을 stop_num에 대입
+        {
+            stop_num = i;
+            break;
+        }
+    }
+    if (stop_num == -1)     //계좌 주소값이 초기에 설저한 값과 같기 때문에 계좌를 찾지 못함/
+    {
+        int select = 0;
+        printf("해당하는 계좌가 존재하지 않습니다.");
+        printf("다시 입력하시겠습니까?(1.예 2.아니요)\n");
+        while (1)       //계좌를 다시 입력 받거나 메인 메뉴.
+        {
+            scanf_s("%d", &select);
+            switch (select)
+            {
+            case 1: stop_account(); break;
+            case 2: main_menu(); break;
+            default: printf("\n잘못 입력하셨습니다. 다시 입력해주세요."); break;
+            }
+        }
+    }
+    else        //해당하는 계좌를 찾음
+    {
+        printf("\n해당 계좌를 중지합니다");
+        account_stop[stop_num] = 0;         //해당 주솟값에 해당하는 계좌의 중지 상태를 0으로 빠꿈으로서 계좌 중지.
+    }
+    main_menu();
+}
+void cancel_stop_account(void)              //계좌 중지와 같은 알고리즘으로 계좌 중지를 해제.
+{
+    printf("\n<계좌 중지 해제>\n");
+    int num;
+    int cancel_num = -1;
+    printf("중지를 해제할 계좌번호를 입력하십시오.\n");
+    scanf_s("%d", &num);
+    for (int i = 0; i < Max; i++)
+    {
+        if (num == account_num[i])
+        {
+            cancel_num = i;
+            break;
+        }
+    }
+    if (cancel_num == -1)
+    {
+        int select = 0;
+        printf("해당하는 계좌가 존재하지 않습니다.");
+        printf("다시 입력하시겠습니까?(1.예 2.아니요)\n");
+        while (1)
+        {
+            scanf_s("%d", &select);
+            switch (select)
+            {
+            case 1: cancel_stop_account(); break;
+            case 2: main_menu(); break;
+            default: printf("\n잘못 입력하셨습니다. 다시 입력해주세요."); break;
+            }
+        }
+    }
+    else
+    {
+        printf("해당 계좌 중지상태를 해제합니다\n");
+        account_stop[cancel_num] = 1;
+    }
+    main_menu();
+}
